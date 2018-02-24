@@ -1,8 +1,8 @@
-#Modern Compiler Implement in ML
+# Modern Compiler Implement in ML
 
 This is a compiler for the Tiger programming language, created from the projects in Modern Compiler Implementation in ML, by Appel.
 
-##Milestone 1 -- Compiler Front-End
+## Milestone 1 -- Compiler Front-End
 
 
 Please note that
@@ -70,6 +70,6 @@ Please note that
 
 
 
-##Milestone 2 -- Compiler Middle-End
+## Milestone 2 -- Compiler Middle-End
 
 

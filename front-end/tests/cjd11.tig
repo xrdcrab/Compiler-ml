@@ -1,0 +1,4 @@
+/* error -- to many arguments */
+let function f(a : int) = a
+in f(1, 2)
+end

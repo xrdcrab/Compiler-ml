@@ -1,0 +1,5 @@
+let var a := 1
+    type a = string
+    function f (a : a) : int = size(a)
+in a + f("hi"
+end

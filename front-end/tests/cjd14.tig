@@ -1,0 +1,39 @@
+/* ensure that record-initialization side effects are kept in programmed order */
+
+let type list={str:string, next:list}
+
+    function append(l1:list, l2:list):list=if l1=nil then l2
+                                           else list{str=l1.str, next=append(l1.next, l2)}
+
+    function rev(l:list):list=if l=nil then nil
+                              else if l.next=nil then l
+			           else append(l.next, list{str=l.str, next=nil})
+
+    function printList(l:list)=if l<>nil then ( print(l.str)
+                                              ; printList(l.next) )
+
+    function printInt (i:int)=let var l:list:=nil
+                              in ( while (i>0) do ( l:=list{str=chr((i-((i/10)*10))+ord("0")), next=l}
+			                          ; i:=i/10 )
+	                         ; pr(rev(l)) )
+                              end
+
+ in let type pt={x:int, y:int}
+
+        var pt1:pt:=pt{y=( print("hi")
+    	        	 ; 1 ),
+                       x=( print("there")
+		         ; 2 )}
+        var pt2:pt:=pt{x=( print("good")
+    	       	         ; 1 ),
+                       y=( print("bye")
+		         ; 2 ) }
+
+        function printPt(p:pt)=( print("x=");
+                                 printInt(p.x);
+		   	         print("y=");
+			         printInt(p.y) )
+
+     in printPt(pt1) ; printPt(pt2)
+    end
+end

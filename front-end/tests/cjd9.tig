@@ -1,0 +1,5 @@
+/* error duplicate field which cannot be initialized */
+let type foo = { one : int, two : int, one : int }
+    var f := foo { one = 1, two = 2 }
+in f
+end

@@ -1,0 +1,49 @@
+(* Tiger grammar *)
+structure A = Absyn
+structure S = Symbol
+
+%%
+%term EOF 
+    | ID of string
+    | INT of int | STRING of string 
+    | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
+    | LBRACE | RBRACE | DOT 
+    | PLUS | MINUS | TIMES | DIVIDE
+    | EQ | NEQ | LT | LE | GT | GE
+    | AND | OR
+    | ASSIGN
+    | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
+    | BREAK
+    | NIL | TRUE | FALSE
+    | FUNCTION | VAR | TYPE | ARRAY
+
+%nonterm  program of A.exp
+          | exp of A.exp
+
+%keyword WHILE FOR TO DO BREAK
+    LET IN END
+    FUNCTION VAR TYPE ARRAY OF
+    IF THEN ELSE
+    NIL
+
+%start program
+%eop EOF
+%noshift EOF
+
+%pos int
+%verbose
+%name Tiger
+
+%prefer THEN ELSE LPAREN
+
+%value ID ("bogus")
+%value INT (1)
+%value STRING ("")
+
+%%
+
+program  : exp          (exp)
+
+exp: NIL		(A.NilExp)
+   | TRUE   (A.BoolExp true)
+   | FALSE  (A.BoolExp false)

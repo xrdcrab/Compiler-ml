@@ -1,0 +1,3 @@
+let var a : int := ( "hi"; 1 )
+in a
+end

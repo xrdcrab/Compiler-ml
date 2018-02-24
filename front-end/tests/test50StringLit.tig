@@ -1,0 +1,6 @@
+/* Tests string literals that include escaped quotation marks */
+let
+	function g (a:string , b:string):int = a
+in
+	g("o\"ne\"", "two")
+end

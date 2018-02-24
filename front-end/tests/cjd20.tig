@@ -1,0 +1,24 @@
+let type strings = array of string
+    var numbers := strings [10] of ""
+ in numbers[0] := "zero"
+  ; numbers[1] := "one"
+  ; numbers[2] := "two"
+  ; numbers[3] := "three"
+  ; numbers[4] := "four"
+  ; numbers[5] := "five"
+  ; numbers[6] := "six"
+  ; numbers[7] := "seven"
+  ; numbers[8] := "eight"
+  ; numbers[9] := "nine"
+  ; for i := 0 to 3
+     do ( print(numbers[i])
+        ; print(" ")
+        ; let var count : int := 0
+           in ( for j := 0 to i
+                 do count := count + j
+              ; print(numbers[count])
+              )
+          end
+        ; print("\n")
+        )
+end

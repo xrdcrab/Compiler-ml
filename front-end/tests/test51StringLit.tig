@@ -1,0 +1,6 @@
+/* error: Unbalanced string literals */
+let
+	function g (a:string , b:string):int = a
+in
+	g("o"ne", "two")
+end

@@ -1,0 +1,6 @@
+/* error:  Extra close comment token */ */
+let
+	function g (a:string , b:string):int = a
+in
+	g("Outside comment... this had better appear", "two")
+end

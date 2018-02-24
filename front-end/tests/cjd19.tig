@@ -1,0 +1,10 @@
+let type point = { x : int, y : int }
+    var p := point { x = 1, y = 2 }
+    var d := point { x = 3, y = 4 }
+    function addPt(p : point, q : point) : point = point { x = p.x + q.x, y = p.y + q.y }
+    type bool = int
+    function eqPt(p : point, q : point) : bool = (p.x = q.x) & (p.y = q.y)
+in print(if (eqPt(addPt(p,d), point { x = 4, y = 6 }))
+         then "CORRECT\n"
+         else "BROKEN\n")
+end

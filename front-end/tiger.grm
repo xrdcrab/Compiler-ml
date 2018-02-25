@@ -57,12 +57,15 @@ type pexp = (A.exp * A.pos)
 
 %nonassoc ASSIGN
 %left UMINUS
-%left TIMES DIVIDE
 %left PLUS MINUS
+%left TIMES DIVIDE
 %left AND OR
 %nonassoc EQ NEQ GT GE LT LE
 %right SEMICOLON
-%left DO OF ELSE
+%left DO OF
+
+%right THEN 
+%right ELSE
 
 %pos int
 %verbose
@@ -79,9 +82,6 @@ type pexp = (A.exp * A.pos)
 program  : exp                                                 (exp)
 
 exp : NIL                                                      (A.NilExp)
-    | ID                                                       (A.VarExp (A.SimpleVar(S.symbol ID, IDleft)))
-    | TRUE                                                     (A.BoolExp true)
-    | FALSE                                                    (A.BoolExp false)
     | INT                                                      (A.IntExp INT)   
     | arithmetic                                               (arithmetic)
     | comparison                                               (comparison)
@@ -89,16 +89,9 @@ exp : NIL                                                      (A.NilExp)
     | WHILE exp DO exp                                         (A.WhileExp{test = exp1, body = exp2, pos = WHILEleft})
     | BREAK                                                    (A.BreakExp BREAKleft)
     | recordexp                                                (recordexp)  
-    | IF exp THEN exp ELSE exp                                 (A.IfExp {test = exp1
-                                                                        , then' = exp2
-                                                                        , else' = SOME(exp3)
-                                                                        , pos = IFleft}) 
-    | IF exp THEN exp                                          (A.IfExp {test = exp1
-                                                                        , then' = exp2
-                                                                        , else' = NONE
-                                                                        , pos = IFleft})
+    | conditionexp                                              (conditionexp)
     | FOR ID ASSIGN exp TO exp DO exp                          (A.ForExp {var = S.symbol ID
-                                                                         , escape = ref true
+  (* 10 *)                                                                       , escape = ref true
                                                                          , lo = exp1
                                                                          , hi = exp2
                                                                          , body = exp3
@@ -114,13 +107,26 @@ exp : NIL                                                      (A.NilExp)
                                                                         , right = exp
                                                                         , pos = MINUSleft})
     | LPAREN RPAREN                                            (A.SeqExp [])
-    | ID LBRACK exp RBRACK OF exp                              (A.ArrayExp {typ = S.symbol ID
+    | array                                                 (array)
+    | LPAREN expseq RPAREN                                     (A.SeqExp expseq)
+    | boolexp                                                  (boolexp)
+(* 19 *)
+array
+    :ID LBRACK exp RBRACK OF exp                             (A.ArrayExp {typ = S.symbol ID
                                                                            , size = exp1
                                                                            , init = exp2
                                                                            , pos = IDleft})
-    | LPAREN expseq RPAREN                                     (A.SeqExp expseq)
-    | boolexp                                                  (boolexp)
 
+conditionexp
+    : IF exp THEN exp ELSE exp                              (A.IfExp {test = exp1
+                                                                        , then' = exp2
+                                                                        , else' = SOME(exp3)
+                                                                        , pos = IFleft}) 
+    | IF exp THEN exp                                     (A.IfExp {test = exp1
+                                                                        , then' = exp2
+                                                                        , else' = NONE
+                                                                        , pos = IFleft}) 
+                                                                        
 expseq : exp                                                   ([(exp, expleft)])
        | expseq SEMICOLON exp                                  (expseq @ [(exp, expleft)])
 
@@ -130,7 +136,7 @@ recordexp : ID LBRACE recordlist RBRACE                        (A.RecordExp {fie
           | ID NIL                                             (A.RecordExp {fields = []
                                                                             , typ = S.symbol ID
                                                                             , pos = IDleft})
-
+(* 25 *)
 recordlist :                                                   ([])
            | recordlistvalue                                   (recordlistvalue)
 
@@ -143,11 +149,14 @@ explist :                                                      ([])
         | exp                                                  ([exp])
         | explist COMMA exp                                    (explist @ [exp])
  
-lvalue : ID                                                    (A.SimpleVar(S.symbol ID, IDleft))
-       | lvalue DOT ID                                         (A.FieldVar(lvalue, S.symbol ID, lvalueleft))
-       | ID LBRACK exp RBRACK                                  (A.SubscriptVar (A.SimpleVar(S.symbol ID, IDleft)
-                                                                               , exp, IDleft))
-       | lvalue LBRACK exp RBRACK                              (A.SubscriptVar(lvalue, exp, lvalueleft))
+ (* 33 *)
+lvalue : ID             %prec LBRACK                                                   (A.SimpleVar(S.symbol ID, IDleft))
+       | nonID                                                  (nonID)
+
+nonID
+    : lvalue DOT ID                                         (A.FieldVar(lvalue, S.symbol ID, lvalueleft))
+    | lvalue LBRACK exp RBRACK                          (A.SubscriptVar(lvalue, exp, lvalueleft))
+       
 
 decs :                                                         ([])
      | decs dec                                                (decs @ [dec])
@@ -156,6 +165,7 @@ dec : tydec                                                    (tydec)
     | vardec                                                   (vardec)
     | fundec                                                   (fundec)
 
+(* 42 *)
 ty : ID                                                        (A.NameTy (S.symbol ID, IDleft))
    | LBRACE tyfields RBRACE                                    (A.RecordTy tyfields)
    | ARRAY OF ID                                               (A.ArrayTy (S.symbol ID, IDleft))
@@ -183,7 +193,7 @@ vardec : VAR ID ASSIGN exp                                     (A.VarDec {name =
                                                                          , typ = SOME (S.symbol ID2, ID2left)
                                                                          , init = exp
                                                                          , pos = VARleft})
-
+(*  52 *)
 fundec : FUNCTION ID LPAREN tyfields RPAREN EQ exp             (A.FunctionDec [{name = S.symbol ID
                                                                               , params = tyfields
                                                                               , result = NONE
@@ -239,13 +249,14 @@ comparison : exp EQ exp                                        (A.OpExp {left = 
 
 boolexp : exp AND exp                                          (A.IfExp {test = exp1
                                                                         , then' = exp2
-                                                                        , else' = FALSE
-                                                                        , pos = expleft})
+                                                                        , else' = SOME(A.BoolExp(false))
+                                                                        , pos = exp1left})
         | exp OR exp                                           (A.IfExp {test = exp1
-                                                                        , then' = TRUE
+                                                                        , then' = A.BoolExp(true)
                                                                         , else' = SOME(exp2)
-                                                                        , pos = expleft})
-
+                                                                        , pos = exp1left})
+                                                                        
 functioncall : ID LPAREN explist RPAREN                        (A.CallExp {func = S.symbol ID
                                                                           , args = explist
                                                                           , pos = IDleft})
+(* 67 *)

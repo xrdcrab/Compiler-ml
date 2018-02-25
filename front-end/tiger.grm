@@ -56,16 +56,15 @@ type pexp = (A.exp * A.pos)
 %noshift EOF
 
 %nonassoc ASSIGN
-%left UMINUS
+%left AND OR
 %left PLUS MINUS
 %left TIMES DIVIDE
-%left AND OR
+%left UMINUS
 %nonassoc EQ NEQ GT GE LT LE
 %right SEMICOLON
 %left DO OF
-
-%right THEN 
-%right ELSE
+%right THEN LBRACK
+%left ELSE
 
 %pos int
 %verbose
@@ -91,7 +90,7 @@ exp : NIL                                                      (A.NilExp)
     | recordexp                                                (recordexp)  
     | conditionexp                                              (conditionexp)
     | FOR ID ASSIGN exp TO exp DO exp                          (A.ForExp {var = S.symbol ID
-  (* 10 *)                                                                       , escape = ref true
+  (* 10 *)                                                               , escape = ref true
                                                                          , lo = exp1
                                                                          , hi = exp2
                                                                          , body = exp3
@@ -107,22 +106,23 @@ exp : NIL                                                      (A.NilExp)
                                                                         , right = exp
                                                                         , pos = MINUSleft})
     | LPAREN RPAREN                                            (A.SeqExp [])
-    | array                                                 (array)
+    | array                                                    (array)
     | LPAREN expseq RPAREN                                     (A.SeqExp expseq)
     | boolexp                                                  (boolexp)
+    
 (* 19 *)
 array
-    :ID LBRACK exp RBRACK OF exp                             (A.ArrayExp {typ = S.symbol ID
+    :ID LBRACK exp RBRACK OF exp                               (A.ArrayExp {typ = S.symbol ID
                                                                            , size = exp1
                                                                            , init = exp2
                                                                            , pos = IDleft})
 
 conditionexp
-    : IF exp THEN exp ELSE exp                              (A.IfExp {test = exp1
+    : IF exp THEN exp ELSE exp                                 (A.IfExp {test = exp1
                                                                         , then' = exp2
                                                                         , else' = SOME(exp3)
                                                                         , pos = IFleft}) 
-    | IF exp THEN exp                                     (A.IfExp {test = exp1
+    | IF exp THEN exp                                          (A.IfExp {test = exp1
                                                                         , then' = exp2
                                                                         , else' = NONE
                                                                         , pos = IFleft}) 
@@ -154,83 +154,83 @@ lvalue : ID             %prec LBRACK                                            
        | nonID                                                  (nonID)
 
 nonID
-    : lvalue DOT ID                                         (A.FieldVar(lvalue, S.symbol ID, lvalueleft))
-    | lvalue LBRACK exp RBRACK                          (A.SubscriptVar(lvalue, exp, lvalueleft))
+    : lvalue DOT ID                                             (A.FieldVar(lvalue, S.symbol ID, lvalueleft))
+    | lvalue LBRACK exp RBRACK                                  (A.SubscriptVar(lvalue, exp, lvalueleft))
        
 
-decs :                                                         ([])
-     | decs dec                                                (decs @ [dec])
+decs :                                                          ([])
+     | decs dec                                                 (decs @ [dec])
 
-dec : tydec                                                    (tydec)
-    | vardec                                                   (vardec)
-    | fundec                                                   (fundec)
+dec : tydec                                                     (tydec)
+    | vardec                                                    (vardec)
+    | fundec                                                    (fundec)
 
 (* 42 *)
-ty : ID                                                        (A.NameTy (S.symbol ID, IDleft))
-   | LBRACE tyfields RBRACE                                    (A.RecordTy tyfields)
-   | ARRAY OF ID                                               (A.ArrayTy (S.symbol ID, IDleft))
+ty : ID                                                         (A.NameTy (S.symbol ID, IDleft))
+   | LBRACE tyfields RBRACE                                     (A.RecordTy tyfields)
+   | ARRAY OF ID                                                (A.ArrayTy (S.symbol ID, IDleft))
 
-tyfield : ID COLON ID                                          ({name = S.symbol ID1
-                                                                , escape = ref true
-                                                                , typ = S.symbol ID2
-                                                                , pos = ID1left})
+tyfield : ID COLON ID                                           ({name = S.symbol ID1
+                                                                 , escape = ref true
+                                                                 , typ = S.symbol ID2
+                                                                 , pos = ID1left})
 
-tyfields :                                                     ([])
-         | tyfield                                             ([tyfield])
-         | tyfields COMMA tyfield                              (tyfields @ [tyfield])
+tyfields :                                                      ([])
+         | tyfield                                              ([tyfield])
+         | tyfields COMMA tyfield                               (tyfields @ [tyfield]) 
 
-tydec : TYPE ID EQ ty                                          (A.TypeDec [{name = S.symbol ID
+tydec : TYPE ID EQ ty                                           (A.TypeDec [{name = S.symbol ID
                                                                           , ty = ty
                                                                           , pos = TYPEleft}])
 
-vardec : VAR ID ASSIGN exp                                     (A.VarDec {name = S.symbol ID
+vardec : VAR ID ASSIGN exp                                      (A.VarDec {name = S.symbol ID
                                                                          , escape = ref true
                                                                          , typ = NONE
                                                                          , init = exp
                                                                          , pos = VARleft})
-       | VAR ID COLON ID ASSIGN exp                            (A.VarDec {name = S.symbol ID1
+       | VAR ID COLON ID ASSIGN exp                             (A.VarDec {name = S.symbol ID1
                                                                          , escape = ref true
                                                                          , typ = SOME (S.symbol ID2, ID2left)
                                                                          , init = exp
                                                                          , pos = VARleft})
 (*  52 *)
-fundec : FUNCTION ID LPAREN tyfields RPAREN EQ exp             (A.FunctionDec [{name = S.symbol ID
+fundec : FUNCTION ID LPAREN tyfields RPAREN EQ exp              (A.FunctionDec [{name = S.symbol ID
                                                                               , params = tyfields
                                                                               , result = NONE
                                                                               , body = exp
                                                                               , pos = FUNCTIONleft}])
-       | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp    (A.FunctionDec [{name = S.symbol ID1
+       | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp     (A.FunctionDec [{name = S.symbol ID1
                                                                               , params = tyfields
                                                                               , result = SOME (S.symbol ID2, ID2left)
                                                                               , body = exp
                                                                               , pos = FUNCTIONleft}])
         
-arithmetic : exp PLUS exp                                      (A.OpExp {left = exp1
+arithmetic : exp PLUS exp                                       (A.OpExp {left = exp1
                                                                         , oper = A.PlusOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
-           | exp MINUS exp                                     (A.OpExp {left = exp1
+           | exp MINUS exp                                      (A.OpExp {left = exp1
                                                                         , oper = A.MinusOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
-           | exp TIMES exp                                     (A.OpExp {left = exp1
+           | exp TIMES exp                                      (A.OpExp {left = exp1
                                                                         , oper = A.TimesOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
-           | exp DIVIDE exp                                    (A.OpExp {left = exp1
+           | exp DIVIDE exp                                     (A.OpExp {left = exp1
                                                                         , oper = A.DivideOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
   
-comparison : exp EQ exp                                        (A.OpExp {left = exp1
+comparison : exp EQ exp                                         (A.OpExp {left = exp1
                                                                         , oper = A.EqOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
-           | exp NEQ exp                                       (A.OpExp {left = exp1
+           | exp NEQ exp                                        (A.OpExp {left = exp1
                                                                         , oper = A.NeqOp
                                                                         , right = exp2
                                                                         , pos = exp1left})
-           | exp LT exp                                        (A.OpExp {left = exp1
+           | exp LT exp                                         (A.OpExp {left = exp1
                                                                         , oper = A.LtOp
                                                                         , right = exp2
                                                                         , pos = exp1left})

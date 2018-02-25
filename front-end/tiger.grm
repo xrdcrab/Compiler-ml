@@ -60,7 +60,6 @@ type pexp = (A.exp * A.pos)
 %left AND OR
 %nonassoc EQ NEQ GT GE LT LE
 %right SEMICOLON
-%left THEN
 %left DO OF ELSE
 
 %pos int
@@ -78,6 +77,7 @@ type pexp = (A.exp * A.pos)
 program  : exp                                                 (exp)
 
 exp : NIL                                                      (A.NilExp)
+    | ID                                                       (A.VarExp (A.SimpleVar(S.symbol ID, IDleft)))
     | TRUE                                                     (A.BoolExp true)
     | FALSE                                                    (A.BoolExp false)
     | INT                                                      (A.IntExp INT)   
@@ -85,7 +85,8 @@ exp : NIL                                                      (A.NilExp)
     | comparison                                               (comparison)
     | STRING                                                   (A.StringExp(STRING, STRINGleft))
     | WHILE exp DO exp                                         (A.WhileExp{test = exp1, body = exp2, pos = WHILEleft})
-    | BREAK                                                    (A.BreakExp BREAKleft)   
+    | BREAK                                                    (A.BreakExp BREAKleft)
+    | recordexp                                                (recordexp)  
     | IF exp THEN exp ELSE exp                                 (A.IfExp {test = exp1
                                                                         , then' = exp2
                                                                         , else' = SOME(exp3)
@@ -102,17 +103,39 @@ exp : NIL                                                      (A.NilExp)
                                                                          , pos = FORleft}) 
     | lvalue                                                   (A.VarExp lvalue)
     | lvalue ASSIGN exp                                        (A.AssignExp {var = lvalue, exp = exp, pos = lvalueleft})
-    | LET decs IN optionalexp END                              (A.LetExp {decs = rev decs
-                                                                         ,body = optionalexp
+    | LET decs IN expseq END                                   (A.LetExp {decs = rev decs
+                                                                         ,body = expseq
                                                                          ,pos = LETleft})
     | functioncall                                             (functioncall)
     | MINUS exp %prec UMINUS                                   (A.OpExp {left = A.IntExp 0
                                                                         , oper = A.MinusOp
                                                                         , right = exp
                                                                         , pos = MINUSleft})
+    | LPAREN RPAREN                                            (A.SeqExp [])
+    | ID LBRACK exp RBRACK OF exp                              (A.ArrayExp {typ = S.symbol ID
+                                                                           , size = exp1
+                                                                           , init = exp2
+                                                                           , pos = IDleft})
+    | LPAREN expseq RPAREN                                     (A.SeqExp expseq)
+    | boolexp                                                  (boolexp)
 
-optionalexp : exp                                              (exp)
-            |                                                  (A.NilExp)
+expseq : exp                                                   ([(exp, expleft)])
+       | expseq SEMICOLON exp                                  (expseq @ [(exp, expleft)])
+
+recordexp : ID LBRACE recordlist RBRACE                        (A.RecordExp {fields = recordlist
+                                                                            , typ = S.symbol ID
+                                                                            , pos = IDleft})
+          | ID NIL                                             (A.RecordExp {fields = []]
+                                                                            , typ = S.symbol ID
+                                                                            , pos = IDleft})
+
+recordlist :                                                   ([])
+           | recordlistvalue                                   (recordlistvalue)
+
+recordlistvalue : recordfield                                  (recordfield)
+                | recordlistvalue COMMA recordfield            (recordlistvalue @ [recordfield])
+
+recordfield : ID EQ exp                                        ((S.symbol ID, exp, IDleft))
 
 explist :                                                      ([])
         | exp                                                  ([exp])
@@ -145,20 +168,20 @@ tyfields :                                                     ()
                                                                 , escape = ref true
                                                                 , pos = ID1left} :: tyfields)
 
-tydec : TYPE ID EQ ty                                          (A.TypeDec {name: S.symbol ID
-                                                                          , ty: ty
-                                                                          , pos: TYPEleft})
+tydec : TYPE ID EQ ty                                          (A.TypeDec {name = S.symbol ID
+                                                                          , ty = ty
+                                                                          , pos = TYPEleft})
 
-vardec : VAR ID ASSIGN exp                                     (A.VarDec {name: S.symbol ID
-                                                                         , escape: ref true
-                                                                         , typ: NONE
-                                                                         , init: exp
-                                                                         , pos: VARleft})
-       | VAR ID COLON ID ASSIGN exp                            (A.VarDec {name: S.symbol ID1
-                                                                         , escape: ref true
-                                                                         , typ: SOME (S.symbol ID2, ID2left)
-                                                                         , init: exp
-                                                                         , pos: VARleft})
+vardec : VAR ID ASSIGN exp                                     (A.VarDec {name = S.symbol ID
+                                                                         , escape = ref true
+                                                                         , typ = NONE
+                                                                         , init = exp
+                                                                         , pos = VARleft})
+       | VAR ID COLON ID ASSIGN exp                            (A.VarDec {name = S.symbol ID1
+                                                                         , escape = ref true
+                                                                         , typ = SOME (S.symbol ID2, ID2left)
+                                                                         , init = exp
+                                                                         , pos = VARleft})
 
 fundec : FUNCTION ID LPAREN tyfields RPAREN EQ exp             (A.FunctionDec {name = S.symbol ID
                                                                               , params = tyfields
@@ -171,47 +194,55 @@ fundec : FUNCTION ID LPAREN tyfields RPAREN EQ exp             (A.FunctionDec {n
                                                                               , body = exp
                                                                               , pos = FUNCTIONleft})
         
-arithmetic : exp PLUS exp                                      (A.OpExp {left=exp1
-                                                                        , oper=A.PlusOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp MINUS exp                                     (A.OpExp {left=exp1
-                                                                        , oper=A.MinusOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp TIMES exp                                     (A.OpExp {left=exp1
-                                                                        , oper=A.TimesOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp DIVIDE exp                                    (A.OpExp {left=exp1
-                                                                        , oper=A.DivideOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
+arithmetic : exp PLUS exp                                      (A.OpExp {left = exp1
+                                                                        , oper = A.PlusOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp MINUS exp                                     (A.OpExp {left = exp1
+                                                                        , oper = A.MinusOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp TIMES exp                                     (A.OpExp {left = exp1
+                                                                        , oper = A.TimesOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp DIVIDE exp                                    (A.OpExp {left = exp1
+                                                                        , oper = A.DivideOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
   
-comparison : exp EQ exp                                        (A.OpExp {left=exp1
-                                                                        , oper=A.EqOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp NEQ exp                                       (A.OpExp {left=exp1
-                                                                        , oper=A.NeqOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp LT exp                                        (A.OpExp {left=exp1
-                                                                        , oper=A.LtOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp LE exp                                        (A.OpExp {left=exp1
-                                                                        , oper=A.LeOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp GT exp                                        (A.OpExp {left=exp1
-                                                                        , oper=A.GtOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
-           | exp GE exp                                        (A.OpExp {left=exp1
-                                                                        , oper=A.GeOp
-                                                                        , right=exp2
-                                                                        , pos=exp1left})
+comparison : exp EQ exp                                        (A.OpExp {left = exp1
+                                                                        , oper = A.EqOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp NEQ exp                                       (A.OpExp {left = exp1
+                                                                        , oper = A.NeqOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp LT exp                                        (A.OpExp {left = exp1
+                                                                        , oper = A.LtOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp LE exp                                        (A.OpExp {left = exp1
+                                                                        , oper = A.LeOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp GT exp                                        (A.OpExp {left = exp1
+                                                                        , oper = A.GtOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+           | exp GE exp                                        (A.OpExp {left = exp1
+                                                                        , oper = A.GeOp
+                                                                        , right = exp2
+                                                                        , pos = exp1left})
+
+boolexp : exp AND exp                                          (A.IfExp {test = exp1
+                                                                        , then' = exp2
+                                                                        , else' = FALSE
+                                                                        , pos = expleft})
+        | exp OR exp                                           (A.IfExp {test = exp1
+                                                                        , then' = TRUE
+                                                                        , else' = SOME(exp2)
+                                                                        , pos = expleft})
 
 functioncall : ID LPAREN explist RPAREN                        (A.CallExp {func=symbol ID, args=explist, pos=IDleft})
-

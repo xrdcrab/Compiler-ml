@@ -199,4 +199,5 @@ nexp : ID EQ exp        ((S.symbol ID, exp, EQleft))
 nexps : (* empty *)     ([])
       | nexp'           (nexp')
             
-
+nexp' : nexp             ([nexp])
+      | nexp COMMA nexp' (nexp :: nexp')

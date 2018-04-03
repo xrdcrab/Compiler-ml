@@ -145,6 +145,8 @@ The files I completed:
 
 ## Milestone 3 -- Compiler Bakc-End (Code Generation)
 
+**Note that Milestone 3 folder contains all Milestone 1&2 files**
+
 Read chapters
     9 (Instruction Selection),
    10 (Liveness Analysis),

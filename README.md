@@ -143,5 +143,29 @@ The files I completed:
                      modifications to transDec
 
 
-## Milestone 3 -- Compiler Bakc-End 
+## Milestone 3 -- Compiler Bakc-End (Code Generation)
+
+Read chapters
+    9 (Instruction Selection),
+   10 (Liveness Analysis),
+   11 (Register Allocation)
+   12 (Putting it All Together)
+Complete program sections from chapter 9, 10, 11, 12.  For register allocation, a simple allocator for up to 27 live temporaries is sufficient for good--excellent marks. Exceptional compilers will spill.
+
+The main.sml structure accepts additional arguments:
+
+             -a generate and print assembly
+                  temporaries will be printed as T###
+             -r allocate registers
+                  all temporaries should become registers
+                  but if not, then they will still be T###
+
+I provided a syslib.s file which contains an RiscV32 system library compatible
+with the Gem5 simulator (https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/se0TVeaA_JI)
+
+Start with a register allocator that works if the function fits in caller-save registers
+(7 registers + 8 arguments); then extend to fit into callee-save registers (another 12 registers)
+where you save all of them; then extend to save only overwritten callee-save registers; then finally
+spill registers for functiosn that don't fit at all.
+
 

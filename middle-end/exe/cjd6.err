@@ -1,0 +1,3 @@
+./tests/cjd6.tig
+./tests/cjd6.tig@2.3: inadmissible values at primitive application--CRASH
+parse failed, continuing...

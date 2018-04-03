@@ -1,0 +1,3 @@
+./tests/cjd14.tig
+./tests/cjd14.tig@18.31: variable `pr' not found.--CRASH
+parse failed, continuing...

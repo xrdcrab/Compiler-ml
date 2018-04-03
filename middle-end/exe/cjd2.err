@@ -1,0 +1,3 @@
+./tests/cjd2.tig
+./tests/cjd2.tig@2.1: variable `a' not found.--CRASH
+parse failed, continuing...

@@ -1,0 +1,203 @@
+(* Tiger grammar *)
+structure A = Absyn
+structure S = Symbol
+
+fun mkSeqExp [(x, p)] = x
+  | mkSeqExp xs = A.SeqExp xs
+
+fun mkArrayExp (A.SimpleVar (i, _), exp1, exp2, pos) = A.ArrayExp { typ = i, size = exp1, init = exp2, pos = pos }
+  | mkArrayExp (_, _, _, pos) = ( ErrorMsg.error pos "Invalid array element type"
+                                ; A.NilExp
+                                )
+
+type nexp = (S.symbol * A.exp * A.pos)
+
+type tdec = { name : S.symbol
+            , ty : A.ty
+            , pos : A.pos}
+
+type optty = (S.symbol * A.pos) option
+
+type pexp = (A.exp * A.pos)
+      
+%%
+%term EOF 
+    | ID of string
+    | INT of int | STRING of string
+    | COMMA | COLON | SEMICOLON | DOT 
+    | LPAREN | RPAREN | LBRACK | RBRACK | LBRACE | RBRACE
+    | PLUS | MINUS | TIMES | DIVIDE
+    | EQ | NEQ | LT | LE | GT | GE
+    | AND | OR
+    | ASSIGN
+    | IF | THEN | ELSE
+    | WHILE | FOR | TO | DO | BREAK
+    | LET | IN | END
+    | NIL
+    | FUNCTION | VAR | TYPE | ARRAY | OF 
+    | UMINUS | DECL
+    | TRUE | FALSE
+
+%nonterm  program of A.exp
+        | exp of A.exp
+        | exps of pexp list
+        | exp' of pexp list
+        | dec of A.dec
+        | decs of A.dec list
+        | fdec of A.fundec
+        | fdecs of A.fundec list
+        | tdec of tdec
+        | tdecs of tdec list
+        | ty of A.ty
+        | tann of S.symbol
+        | optty of (S.symbol * A.pos) option
+        | field of A.field
+        | fields of A.field list
+        | field' of A.field list
+        | var of A.var
+        | args of A.exp list
+        | arg' of A.exp list
+        | nexp of nexp
+        | nexps of nexp list
+        | nexp' of nexp list
+
+%keyword WHILE FOR TO DO BREAK
+         LET IN END
+         FUNCTION VAR TYPE ARRAY OF
+         IF THEN ELSE
+         NIL TRUE FALSE
+
+%start program
+%eop EOF
+%noshift EOF
+
+%pos int
+%verbose
+%name Tiger
+
+%right    DECL
+%right    TYPE FUNCTION
+
+%right    DO
+%left     OF
+%nonassoc ASSIGN THEN
+%nonassoc ELSE
+%left     OR
+%left     AND
+%nonassoc EQ NEQ GT LT GE LE
+%left     PLUS MINUS
+%left     TIMES DIVIDE
+%nonassoc UMINUS
+
+%prefer THEN ELSE LPAREN
+
+%value ID ("bogus")
+%value INT (1)
+%value STRING ("")
+
+%%
+
+program  : exp          (exp)
+
+exp : var                              (A.VarExp var)
+    | var ASSIGN exp                   (A.AssignExp { var = var, exp = exp, pos = ASSIGNleft })
+    | ID LPAREN args RPAREN            (A.CallExp { func = S.symbol ID, args = args, pos = LPARENleft })
+    | ID LBRACE nexps RBRACE           (A.RecordExp { fields = nexps, typ = S.symbol ID, pos = LBRACEleft })
+    | var LBRACK exp RBRACK OF exp     (mkArrayExp (var, exp1, exp2, LBRACKleft))
+
+    | NIL                  (A.NilExp)
+    | INT                  (A.IntExp INT)
+    | TRUE                 (A.BoolExp true)
+    | FALSE                (A.BoolExp false)
+    | STRING               (A.StringExp (STRING, STRINGleft))
+      
+    | MINUS exp            %prec UMINUS (A.OpExp { left = A.IntExp 0, oper = A.MinusOp,  right = exp,  pos = MINUSleft })
+    | exp PLUS exp                      (A.OpExp { left = exp1,       oper = A.PlusOp,   right = exp2, pos = PLUSleft })
+    | exp MINUS exp                     (A.OpExp { left = exp1,       oper = A.MinusOp,  right = exp2, pos = MINUSleft })
+    | exp TIMES exp                     (A.OpExp { left = exp1,       oper = A.TimesOp,  right = exp2, pos = TIMESleft })
+    | exp DIVIDE exp                    (A.OpExp { left = exp1,       oper = A.DivideOp, right = exp2, pos = DIVIDEleft })
+    | exp EQ exp                        (A.OpExp { left = exp1,       oper = A.EqOp,     right = exp2, pos = EQleft })
+    | exp NEQ exp                       (A.OpExp { left = exp1,       oper = A.NeqOp,    right = exp2, pos = NEQleft })
+    | exp GT exp                        (A.OpExp { left = exp1,       oper = A.GtOp,     right = exp2, pos = GTleft })
+    | exp LT exp                        (A.OpExp { left = exp1,       oper = A.LtOp,     right = exp2, pos = LTleft })
+    | exp GE exp                        (A.OpExp { left = exp1,       oper = A.GeOp,     right = exp2, pos = GEleft })
+    | exp LE exp                        (A.OpExp { left = exp1,       oper = A.LeOp,     right = exp2, pos = LEleft })
+      
+    | exp AND exp             (A.IfExp { test = exp1, then' = exp2, else' = SOME (A.BoolExp false), pos = ANDleft })
+    | exp OR exp              (A.IfExp { test = exp1, then' = A.BoolExp true, else' = SOME exp2, pos = ORleft })
+      
+    | IF exp THEN exp ELSE exp               (A.IfExp { test = exp1, then' = exp2, else' = SOME exp3, pos = IFleft })
+    | IF exp THEN exp                        (A.IfExp { test = exp1, then' = exp2, else' = NONE, pos = IFleft })
+      
+    | WHILE exp DO exp                 (A.WhileExp { test = exp1, body = exp2, pos = WHILEleft})
+    | BREAK                            (A.BreakExp BREAKleft)
+    | FOR ID ASSIGN exp TO exp DO exp  (A.ForExp { var = S.symbol ID
+						 , escape = ref true
+						 , lo = exp1
+						 , hi = exp2
+						 , body = exp3
+						 , pos = FORleft })
+    | LET decs IN exps END          (A.LetExp { decs = decs, body = mkSeqExp exps, pos = LETleft })
+    | LPAREN exps RPAREN            (mkSeqExp exps)
+        
+dec : tdecs                   (A.TypeDec tdecs)
+    | VAR ID optty ASSIGN exp (A.VarDec { name = S.symbol ID, escape = ref true, typ = optty, init = exp, pos = VARleft })
+    | fdecs                   (A.FunctionDec fdecs)
+            
+decs : (* empty *)   ([])
+     | dec decs      (dec :: decs)
+      
+tdecs : tdec      %prec DECL  ([tdec])
+      | tdec tdecs            ((tdec :: tdecs))
+        
+tdec : TYPE ID EQ ty ({ name = S.symbol ID, ty = ty, pos = TYPEleft })
+       
+fdecs : fdec      %prec DECL  ([fdec])
+      | fdec fdecs            ((fdec :: fdecs))
+        
+fdec : FUNCTION ID LPAREN fields RPAREN optty EQ exp  ({ name = S.symbol ID
+                                                       , params = fields
+                                                       , result = optty
+                                                       , body = exp
+                                                       , pos = FUNCTIONleft })
+      
+var : ID                      (A.SimpleVar (S.symbol ID, IDleft))
+    | var DOT ID              (A.FieldVar (var, S.symbol ID, DOTleft))
+    | var LBRACK exp RBRACK   (A.SubscriptVar (var, exp, LBRACKleft))
+     
+optty : (* empty *)     (NONE)
+      | tann            (SOME(tann, tannleft))
+            
+ty : ID                    (A.NameTy (S.symbol ID, IDleft))
+   | LBRACE fields RBRACE  (A.RecordTy fields)
+   | ARRAY OF ID           (A.ArrayTy (S.symbol ID, ARRAYleft))
+      
+tann : COLON ID            (S.symbol ID)
+        
+field : ID tann         ({ name = S.symbol ID, escape = ref true, typ = tann, pos = tannleft })
+      
+fields : (* empty *)    ([])
+       | field'         (field')
+            
+field' : field                ([field])
+       | field COMMA field'   (field :: field')
+          
+exps : (* empty *)      ([])
+     | exp'             (exp')
+            
+exp' : exp                 ([(exp, expleft)])
+     | exp SEMICOLON exp'  ((exp, expleft) :: exp')
+      
+args : (* empty *)      ([])
+     | arg'             (arg')
+            
+arg' : exp              ([exp])
+     | exp COMMA arg'   (exp :: arg')
+      
+nexp : ID EQ exp        ((S.symbol ID, exp, EQleft))
+                 
+nexps : (* empty *)     ([])
+      | nexp'           (nexp')
+            
+nexp' : nexp             ([nexp])
+      | nexp COMMA nexp' (nexp :: nexp')

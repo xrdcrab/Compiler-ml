@@ -1,0 +1,3 @@
+./tests/test22.tig
+./tests/test22.tig@7.6: field nam not found--CRASH
+parse failed, continuing...

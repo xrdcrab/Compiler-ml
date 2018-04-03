@@ -1,0 +1,4 @@
+./tests/test54Comment.tig
+./tests/test54Comment.tig@6.5: Unfinished comment starting at line 144
+./tests/test54Comment.tig@6.5: syntax error found at EOF
+parse failed, continuing...

@@ -1,0 +1,3 @@
+./tests/test36.tig
+./tests/test36.tig@5.3: wrong number of arguments to function--CRASH
+parse failed, continuing...

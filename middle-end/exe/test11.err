@@ -1,0 +1,3 @@
+./tests/test11.tig
+./tests/test11.tig@2.1: for-loop end not-integer--CRASH
+parse failed, continuing...

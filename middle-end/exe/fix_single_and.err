@@ -1,0 +1,3 @@
+./tests/fix_single_and.tig
+./tests/fix_single_and.tig@4.7: if-test not boolean--CRASH
+parse failed, continuing...

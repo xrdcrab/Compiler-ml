@@ -1,0 +1,3 @@
+./tests/test49.tig
+./tests/test49.tig@5.18: syntax error: inserting  PLUS
+parse failed, continuing...

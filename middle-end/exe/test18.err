@@ -1,0 +1,3 @@
+./tests/test18.tig
+./tests/test18.tig@5.15: variable `do_nothing2' not found.--CRASH
+parse failed, continuing...

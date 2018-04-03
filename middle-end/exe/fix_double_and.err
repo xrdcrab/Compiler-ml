@@ -1,0 +1,3 @@
+./tests/fix_double_and.tig
+./tests/fix_double_and.tig@4.8: syntax error: inserting  BREAK
+parse failed, continuing...

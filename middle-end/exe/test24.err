@@ -1,0 +1,3 @@
+./tests/test24.tig
+./tests/test24.tig@5.3: index into not-an-array--CRASH
+parse failed, continuing...

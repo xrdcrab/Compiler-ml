@@ -1,0 +1,3 @@
+./tests/test20.tig
+./tests/test20.tig@3.18: variable `i' not found.--CRASH
+parse failed, continuing...

@@ -1,0 +1,6 @@
+./tests/test51StringLit.tig
+./tests/test51StringLit.tig@5.19: newline in string constant
+./tests/test51StringLit.tig@5.24: newline in string constant
+./tests/test51StringLit.tig@4.4: Unfinished string started at line 5
+./tests/test51StringLit.tig@1.4: syntax error: deleting  STRING ID STRING
+parse failed, continuing...

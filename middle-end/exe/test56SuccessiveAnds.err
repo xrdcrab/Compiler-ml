@@ -1,0 +1,3 @@
+./tests/test56SuccessiveAnds.tig
+./tests/test56SuccessiveAnds.tig@2.3: if-test not boolean--CRASH
+parse failed, continuing...

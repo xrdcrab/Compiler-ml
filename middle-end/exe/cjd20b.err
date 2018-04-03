@@ -1,0 +1,3 @@
+./tests/cjd20b.tig
+./tests/cjd20b.tig@14.23: array index 10 out-of-bounds--CRASH
+parse failed, continuing...

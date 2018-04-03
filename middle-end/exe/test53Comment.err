@@ -1,0 +1,3 @@
+./tests/test53Comment.tig
+./tests/test53Comment.tig@1.41: syntax error: replacing  TIMES with  BREAK
+parse failed, continuing...

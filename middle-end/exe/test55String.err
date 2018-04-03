@@ -1,0 +1,6 @@
+./tests/test55String.tig
+./tests/test55String.tig@5.56: newline in string constant
+./tests/test55String.tig@5.61: newline in string constant
+./tests/test55String.tig@4.4: Unfinished string started at line 5
+./tests/test55String.tig@4.4: syntax error found at EOF
+parse failed, continuing...

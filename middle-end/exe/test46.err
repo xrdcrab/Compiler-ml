@@ -1,0 +1,3 @@
+./tests/test46.tig
+./tests/test46.tig@6.4: inadmissible values at primitive application--CRASH
+parse failed, continuing...

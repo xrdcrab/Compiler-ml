@@ -1,0 +1,4 @@
+./tests/test43.tig
+empty sequence--warning
+./tests/test43.tig@6.4: inadmissible values at primitive application--CRASH
+parse failed, continuing...

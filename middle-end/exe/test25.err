@@ -1,0 +1,3 @@
+./tests/test25.tig
+./tests/test25.tig@5.3: field f for not-a-record--CRASH
+parse failed, continuing...

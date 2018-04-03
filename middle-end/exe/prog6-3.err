@@ -1,0 +1,3 @@
+./tests/prog6-3.tig
+./tests/prog6-3.tig@20.23: inadmissible values at primitive application--CRASH
+parse failed, continuing...

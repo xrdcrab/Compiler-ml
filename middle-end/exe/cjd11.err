@@ -1,0 +1,3 @@
+./tests/cjd11.tig
+./tests/cjd11.tig@3.5: wrong number of arguments to function--CRASH
+parse failed, continuing...

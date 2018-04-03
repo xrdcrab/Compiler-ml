@@ -1,0 +1,3 @@
+./tests/minus-no-exp.tig
+./tests/minus-no-exp.tig@4.1: syntax error: inserting  BREAK
+parse failed, continuing...

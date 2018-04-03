@@ -1,0 +1,3 @@
+./tests/cjd10.tig
+./tests/cjd10.tig@5.1: syntax error found at END
+parse failed, continuing...

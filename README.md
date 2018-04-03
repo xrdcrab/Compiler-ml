@@ -72,6 +72,10 @@ Please note that
 
 ## Milestone 2 -- Compiler Middle-End (Semantic Analysis to Intermediate Representations)
 
+**Note that Milestone 2 folder contains all Milestone 1 files**
+
+As the starter for Middle-End, the Tiger book supply additional files:
+
       absyn.sml    -- Absyn structure: the abstract syntax
 
       errormsg.sml -- ERRORMSG signature and ErrorMsg structure
@@ -87,8 +91,6 @@ Please note that
                          -t => turns on trace scheduling
 
 			 -x => turns on an interpreter back end
-
-As the starter for Middle-End, the Tiger book supply additional files:
 
        temp.sig -- the TEMP signature
        temp.sml -- the Temp structure

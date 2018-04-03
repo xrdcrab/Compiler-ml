@@ -1,0 +1,6 @@
+/* Testing nested comments /* test inside nest */ test at top level */
+let
+	function g (a:string , b:string):int = a
+in
+	g("Outside comment... this had better appear", "two")
+end

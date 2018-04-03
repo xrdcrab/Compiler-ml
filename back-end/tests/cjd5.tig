@@ -1,0 +1,7 @@
+/* strings with formats and controls  /* and nested comments */*/
+let var s1 := "\^@\^A\^B\^[\^]"
+    var s2 := "1234\
+		   \567890"
+    var s3 := "nt\"\n\t\002\\"
+in 1 + 1
+end

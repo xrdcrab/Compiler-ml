@@ -1,0 +1,5 @@
+let var i := "hi"
+in ( i := "bye"
+   ; print(i)
+   )
+end

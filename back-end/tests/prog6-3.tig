@@ -1,0 +1,51 @@
+let type tree = { key : string
+                , left : tree
+                , right : tree
+                }
+
+    function prettyprint(tree:tree) : string =
+      let var output := ""
+
+          function write(s:string) =
+            output := concat(output,s)
+
+          function show(n:int, t:tree) =
+            let function indent(s:string) =
+                  ( for i := 1 to n
+                    do write(" ")
+                  ; output := concat(output,s)
+                  ; write("\n")
+                  )
+            in if (nil=t) then indent(".")
+                          else ( indent(t.key)
+                               ; show(n+1,t.left)
+                               ; show(n+1,t.right)
+                               )
+           end
+       in show(0,tree)
+        ; output
+      end
+
+    var t0 : tree := tree{ key="0", left=nil, right=nil }
+    var t1 : tree := tree{ key="1", left=nil, right=nil }
+    var t2 : tree := tree{ key="2", left=nil, right=nil }
+    var t3 : tree := tree{ key="3", left=nil, right=nil }
+    var t4 : tree := tree{ key="4", left=nil, right=nil }
+    var t5 : tree := tree{ key="5", left=nil, right=nil }
+    var t6 : tree := tree{ key="6", left=nil, right=nil }
+    var t7 : tree := tree{ key="7", left=nil, right=nil }
+
+    var t01 : tree := tree{ key="01", left=t0, right=t1 }
+    var t23 : tree := tree{ key="23", left=t2, right=t3 }
+    var t45 : tree := tree{ key="45", left=t4, right=t5 }
+    var t67 : tree := tree{ key="67", left=t6, right=t7 }
+
+    var t03 : tree := tree{ key="03", left=t01, right=t23 }
+    var t47 : tree := tree{ key="47", left=t45, right=t67 }
+
+    var t07 : tree := tree{ key="07", left=t03, right=t47 }
+
+in prettyprint(t07)
+end
+
+

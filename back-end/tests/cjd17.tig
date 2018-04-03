@@ -1,0 +1,8 @@
+let function even(n : int) : string = if n=0
+                                      then "EVEN\n"
+				      else odd(n-1)
+    function odd (n : int) : string = if n=0
+                                      then "ODD\n"
+				      else even(n-1)
+ in print(even(10))
+end

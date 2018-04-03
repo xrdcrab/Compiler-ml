@@ -1,0 +1,1 @@
+let var i:=2 in print(if (i=0) then "hi" else if (i=1) then "there" else "bye") end

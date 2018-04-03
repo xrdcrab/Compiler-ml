@@ -1,0 +1,6 @@
+/* Error: assignment without expression. */
+let
+	var b :=
+in
+	0
+end

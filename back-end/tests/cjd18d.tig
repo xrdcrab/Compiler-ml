@@ -1,0 +1,7 @@
+let var t := true
+in
+  while t do
+    ( print("hi")
+    ; t := false
+    )
+end

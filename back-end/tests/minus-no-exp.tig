@@ -1,0 +1,6 @@
+/* Error: minus w/o expression. */
+let
+	var a := -
+in
+	0
+end

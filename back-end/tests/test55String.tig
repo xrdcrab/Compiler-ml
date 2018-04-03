@@ -1,0 +1,6 @@
+/* error:  Unclosed string at eof */
+let
+	function g (a:string , b:string):int = a
+in
+	g("Outside comment... this had better appear", "two) 
+end

@@ -32,11 +32,25 @@ struct
                            fun liftME me = ME := (fn ast => me (TextIO.stdOut, ast))
 
                            val BE = ref (fn frag => ())      (* a simple back-end *)
-                           fun liftBE be = BE := (fn frag => be (TextIO.stdOut, frag))
+                           fun liftBE be = BE := (fn frag => be (TextIO.stdOut, RiscVFrame.mainFrame, frag))
 
                            val MO = ref (fn stm => [stm])    (* a simple middle-end optimizer *)
                            fun setMO mo = MO := mo
 
+                           val BO = ref (fn (ins, frm) => ins) (* a simple back-end optimizer *)
+                           fun setBO bo = BO := bo
+                                          
+                           fun printFrag pPROC pSTR (str, frm, frag) = case frag
+                                                                        of Translate.PROC {body, frame={name,formals,sp}} =>
+                                                                                                         ( TextIO.output (str, (";PROC " ^ (Symbol.name name) ^ ":\n"))
+                                                                                                                                            ; pPROC (str, frm, ((!MO) body))
+                                                                           )
+                                                                         | Translate.STRING (l, s) => pSTR (str, l, s)
+                                                                                                      
+                           fun printString (str, l, s) =  TextIO.output(str, ("STRING " ^ (Symbol.name l) ^ ":\"" ^ s ^ "\"\n"))
+                                                          
+                           fun liftPrintStm printer (str, _, stms) = app (fn stm => printer (str, stm))
+                                                                         stms
                            fun withFrag f (str, frag) = case frag
                                                          of Translate.PROC {body, frame={name,formals,sp}} =>
 						            ( TextIO.output (str, ("PROC " ^ (Symbol.name name)
@@ -53,14 +67,18 @@ struct
                            val argopts = [ { short = "p"
                                            , long = ["print"]
                                            , desc = GetOpt.NoArg (fn _ => ( liftME PrintAbsyn.print
-                                                                          ; liftBE (withFrag PrintTree.print)))
+                                                                          ; liftBE (printFrag (liftPrintStm PrintTree.print)
+											      printString)
+								          ))
                                            , help = "print with constructors"
                                            }
                                                
                                          , { short = "u"
                                            , long = ["unparse"]
                                            , desc = GetOpt.NoArg (fn _ => ( liftME UnparseAbsyn.print
-                                                                          ; liftBE (withFrag UnparseTree.print)))
+                                                                          ; liftBE (printFrag (liftPrintStm UnparseTree.print)
+									                      printString)
+									  ))
                                            , help = "unparse to concrete syntax"
                                            }
 					       
@@ -95,6 +113,32 @@ struct
 					   , desc = GetOpt.NoArg (fn _ => liftME Interp.exec)
 					   , help = "interpret program"
 					   }
+
+                                         , { short = "a"
+                                           , long = ["generate assembly"]
+                                           , desc = GetOpt.NoArg (fn _ => liftBE (printFrag (fn (str, frm, stms) => app (fn i => TextIO.output(str, Assem.format Temp.makestring i))
+                                                                                                                        ((!BO) (List.concat (map (RiscVGen.codegen frm)
+                                                                                                                                                 stms), frm)))
+                                                                                            (fn (str, l, s) => TextIO.output (str, RiscVFrame.string (l, s)))))
+                                             
+                                           , help = "print assembly"
+                                           }
+
+                                         , { short = "r"
+                                           , long = ["register allocate"]
+                                           , desc = GetOpt.NoArg (fn _ => liftBE (printFrag (fn (str, frm, stms) => let val insts = ((!BO) (List.concat (map (RiscVGen.codegen frm)
+                                                                                                                                                             stms), frm))
+                                                                                                                        val (insts, alloc) = RegAlloc.alloc(insts, frm)
+                                                                                                                        fun tempPrinter t = case Temp.Table.look(alloc, t)
+                                                                                                                                              of NONE => Temp.makestring t
+                                                                                                                                               | SOME x => "$" ^ x
+                                                                                                                    in app (fn i => TextIO.output(str, Assem.format tempPrinter i))
+                                                                                                                           insts
+                                                                                                                    end)
+                                                                                            (fn (str, l, s) => TextIO.output (str, RiscVFrame.string (l, s)))))
+                                           , help = "allocate registers"
+                                           }
+					       
 					 ]
 
                            val (_, fs) = GetOpt.getOpt { argOrder = GetOpt.RequireOrder

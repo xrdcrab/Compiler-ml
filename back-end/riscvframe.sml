@@ -9,7 +9,7 @@ struct
   type register = string
 
   (* fix these ... they are clearly insufficient *)
-  val wordSize = 0
+  val wordSize = 4
   val FP = M.newtemp ()
   val FPreg = ("fp", FP)
 		  
@@ -17,7 +17,13 @@ struct
   val SPreg = ("sp", SP)
 
   val LR = M.newtemp ()
-  val LRreg = ("ra", LR)
+  val RAreg = ("ra", LR)
+
+  val formalRegNum = 6    (* a2 - a7 *) 
+  val rvRegNum = 2        (* a0 a1 *)
+  val tempRegNum = 7      (* t0 - t6 *)
+  val callerSaveNum = 15  
+  val calleeSaveNum = 11  (* note s0 is fp so exclude it *)
 
   (* other registers not mentioned:
    *     pc -- program counter
@@ -43,13 +49,13 @@ struct
   val rregs = [ RVreg, ("a1", Temp.newtemp()) ] (* name must be same as argument register *)
   val rvregs = map (fn (s, _) => s) rregs
 
-  (* argument registers *)
+  (* argument registers. a0 a1 are return value registers *)
   val aregs = makeRegs ("a", 2, 7) @ rregs
   val argregs = map (fn (s, _) => s) aregs
 
   (* variable registers *)
   val eregs = makeRegs ("s", 1, 11) (* callee save ... note s0 is fp so exclude it *)
-  val tregs = makeRegs ("t", 0, 6)
+  val tregs = makeRegs ("t", 0, 6)  (* temp registers *)
   val vregs = aregs @ eregs @ tregs
   val varregs = map (fn (s, _) => s) vregs
 
@@ -65,7 +71,7 @@ struct
 
 
 
-  fun externalCall (_, _) = R.CONST 0 (* place holder ... fill this in *)
+  fun externalCall (functionName, args) = R.CALL(R.NAME(M.namedlabel(functionName)), args) (* place holder ... fill this in *)
 
   datatype access = InFrame of int
                   | InReg of Temp.temp
@@ -102,58 +108,63 @@ struct
 
   val wordSize = 4 (* bytes *)
 
-		         fun newFrame {name, formals} = let val maxIncomingRegs = 8
-				                           val firstIncomingOffset = wordSize
-				                           fun placeFormal (_, (n, 0, formals)) = (n+wordSize, 0, (InFrame n)::formals)
-					                          | placeFormal (true, (n, r, formals)) = (n+wordSize, r, (InFrame n)::formals)
-					                          | placeFormal (false, (n, r, formals)) = (n, r-1, (InReg (M.newtemp())::formals))
-				                       in let val (_, _, formals) = foldl placeFormal (firstIncomingOffset, maxIncomingRegs, []) formals
-				                          in {name = name, formals = formals, sp = ref 0}
-				                          end
-				                       end
-
-    fun formals {name, formals=formals, sp} = formals
-
-    fun name {name=name, formals, sp} = name
+  fun newFrame {name, formals} = let val maxIncomingRegs = 8
+                        val firstIncomingOffset = wordSize
+                        fun placeFormal (_, (n, 0, formals)) = (n+wordSize, 0, (InFrame n)::formals)
+                         | placeFormal (true, (n, r, formals)) = (n+wordSize, r, (InFrame n)::formals)
+                         | placeFormal (false, (n, r, formals)) = (n, r-1, (InReg (M.newtemp())::formals))
+                    in let val (_, _, formals) = foldl placeFormal (firstIncomingOffset, maxIncomingRegs, []) formals
+                       in {name = name, formals = formals, sp = ref 0}
+                       end
+                    end
+  
+  (* val formals : frame -> access list *)
+  fun formals {name, formals=formals, sp} = formals
+  
+  (* val name : frame -> Temp.label *)
+  fun name {name=name, formals, sp} = name
 			
-    fun postdec r = let val n = !r
-		    in ( r := n - wordSize
-		       ; n )
-		    end
+  fun postdec r = let val n = !r
+	    in ( r := n - wordSize
+	       ; n )
+	    end
+  
+  (* val allocLocal : frame -> bool -> access *)
+  fun allocLocal {name, formals, sp=sp} true = InFrame (postdec sp)
+    | allocLocal _ false = InReg (M.newtemp ())
+		     
+  fun externalCall (s, args) = R.CALL (R.NAME (Temp.namedlabel ("_" ^ s)), args)
 
-    fun allocLocal {name, formals, sp=sp} true = InFrame (postdec sp)
-      | allocLocal _ false = InReg (M.newtemp ())
-			     
-    fun externalCall (s, args) = R.CALL (R.NAME (Temp.namedlabel ("_" ^ s)), args)
-
-    (* yields an R.MEM or R.TEMP which can be used as an l-value or an r-value *)
-    fun exp (InFrame 0) fp = R.MEM fp
-      | exp (InFrame k) fp = if k<0 then R.MEM (R.BINOP (R.MINUS, fp, (R.CONST (0-k))))
-			                    else R.MEM (R.BINOP (R.PLUS, fp, (R.CONST k)))
-      | exp (InReg r) _ = R.TEMP r
-                          
-    fun staticLink {name,formals=[],sp} = E.impossible "NO STATIC LINK"
-      | staticLink {name,formals=(sl::realFormals),sp} = sl
+  (* yields an R.MEM or R.TEMP which can be used as an l-value or an r-value *)
+  (* val exp : access -> Tree.exp -> Tree.exp *)
+  fun exp (InFrame 0) fp = R.MEM fp
+    | exp (InFrame k) fp = if k<0 then R.MEM (R.BINOP (R.MINUS, fp, (R.CONST (0-k))))
+		                    else R.MEM (R.BINOP (R.PLUS, fp, (R.CONST k)))
+    | exp (InReg r) _ = R.TEMP r
+    
+  (* val staticLink : frame -> access *)                      
+  fun staticLink {name,formals=[],sp} = E.impossible "NO STATIC LINK"
+    | staticLink {name,formals=(sl::realFormals),sp} = sl
 
 
-    fun procEntryExit1 (frame, stm) = stm (* dummy as on p.170 *)
-                                      
-    fun procEntryExit2 (frame, body) = body
-                                       @ [] (* fill this in--cf. pp. 208--209 *)
-                                       
-    fun procEntryExit3 ({name, formals, sp}, body) = { prolog = "PROCEDURE " ^ S.name name ^ "\n"  (* dummy on p.209 *)
-	                                             , body=body
-	                                             , epilog = "END " ^ S.name name ^ "\n"
-                                                     }
+  fun procEntryExit1 (frame, stm) = stm (* dummy as on p.170 *)
+                                    
+  fun procEntryExit2 (frame, body) = body
+                                     @ [] (* fill this in--cf. pp. 208--209 *)
+                                     
+  fun procEntryExit3 ({name, formals, sp}, body) = { prolog = "PROCEDURE " ^ S.name name ^ "\n"  (* dummy on p.209 *)
+                                             , body=body
+                                             , epilog = "END " ^ S.name name ^ "\n"
+                                                   }
 
-    fun string (l, s) = (S.name l) ^ ": .asciiz \"" ^ (String.toString s) ^ "\"\n"
+  fun string (l, s) = (S.name l) ^ ": .asciiz \"" ^ (String.toString s) ^ "\"\n"
 
-    val mainFrame = newFrame { name = M.namedlabel "tigermain"
-			     , formals = []
-                             }
+  val mainFrame = newFrame { name = M.namedlabel "tigermain"
+		     , formals = []
+                           }
 
-    datatype frag = PROC of { body : Tree.stm
-                            , frame : frame }
-                  | STRING of Temp.label * string
+  datatype frag = PROC of { body : Tree.stm
+                          , frame : frame }
+                | STRING of Temp.label * string
 
 end

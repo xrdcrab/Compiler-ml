@@ -20,7 +20,7 @@ compile :
 		$(SML)/bin/ml-build sources.cm Main.main
 
 # test runs a set of tests on the testcases in ./tests
-test :	sources.$(ARCH) testast testpup testesc testpec testuec testuect
+test :	sources.$(ARCH) testast testpup testesc testpec testuec testuect testasm
 
 # testast parses and dumps AST for a set of testcases
 #     test/foo.tig  ---->   ast/foo.ast
@@ -174,6 +174,34 @@ testuect:
 		  done)
 		# nothing can be checked for ... you need to manually inspect
 
+# tests assembly language generation
+testasm:	
+		-$(RMALL) ./asm
+		 $(MKDIR) ./asm
+		-(for f in ./tests/*.tig                                      ; \
+		  do                                                            \
+		        $(SML)/bin/sml @SMLload=./sources                           \
+					-u -e -c -t -a                                \
+				             $$f                                          \
+				              > ./asm/`$(BASENAME) $$f .tig`.asm          \
+				             2> ./asm/`$(BASENAME) $$f .tig`.err             ; \
+		  done)
+		# nothing can be checked for ... you need to manually inspect
+
+# tests assembly-language with register allocation ... i.e. complete compilation
+testra:	
+		-$(RMALL) ./ra
+		 $(MKDIR) ./ra
+		-(for f in ./tests/*.tig                                      ; \
+		  do                                                            \
+		        $(SML)/bin/sml @SMLload=./sources                           \
+					-u -e -c -t -r                                 \
+				             $$f                                          \
+				              > ./ra/`$(BASENAME) $$f .tig`.s          \
+				             2> ./ra/`$(BASENAME) $$f .tig`.err             ; \
+		  done)
+		# nothing can be checked for ... you need to manually inspect
+
 clean :
-		-$(RMALL) sources.$(ARCH) ast pup1 pup2 esc chk exe *~ \
+		-$(RMALL) sources.$(ARCH) ast pup1 pup2 esc chk exe asm ra *~ \
 					 tiger.grm.* tiger.lex.* .cm

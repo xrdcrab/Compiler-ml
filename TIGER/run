@@ -1,0 +1,5 @@
+#!/bin/bash
+
+#/opt/riscv32/bin/riscv32-unknown-elf-gcc main.c syslib.s $1 -lc -o `basename $1 .s`
+/opt/riscv32/bin/riscv32-unknown-elf-run `basename $1 .s`
+

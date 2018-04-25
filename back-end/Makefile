@@ -20,7 +20,8 @@ compile :
 		$(SML)/bin/ml-build sources.cm Main.main
 
 # test runs a set of tests on the testcases in ./tests
-test :	sources.$(ARCH) testast testpup testesc testpec testuec testuect testasm
+
+test :	sources.$(ARCH) testasm testra
 
 # testast parses and dumps AST for a set of testcases
 #     test/foo.tig  ---->   ast/foo.ast

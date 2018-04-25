@@ -220,7 +220,7 @@ Makegraph module is empty because I implement that flow-graph constructor functi
 
 **The simulator is too large to uploade to this repository, find it [here](https://www.dropbox.com/s/od8e7xg1y01aglx/riscv32.zip?dl=0).**
 
-In the /TIGER folder, I've placed a number of files.  Most notably,
+In the /TIGER folder, I've placed a number of files. Most notably,
 
   * assemble 
     - a shell script that takes a single *.s file and 

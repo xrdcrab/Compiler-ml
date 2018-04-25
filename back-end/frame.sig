@@ -8,7 +8,11 @@ sig
 
     val FP : Temp.temp
     val RV : Temp.temp		(* as seen by callee *)
+    val ZERO : Temp.temp
+    val RA : Temp.temp
 
+    val calleeRegs : Temp.temp list
+    val speRegs : Temp.temp list
     val tempMap : register Temp.Table.table
     val externalCall : string * Tree.exp list -> Tree.exp
 
@@ -24,8 +28,8 @@ sig
     val newFrame : {name : Temp.label, formals : bool list} -> frame
     val formals : frame -> access list
     val allocLocal : frame -> bool -> access
-
     val exp : access -> Tree.exp -> Tree.exp
+
 
     val staticLink : frame -> access
 

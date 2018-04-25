@@ -1,7 +1,6 @@
 signature TREE = 
 sig 
   type label = Temp.label
-  type temp = Temp.temp
   type size
 
   datatype stm = SEQ of stm * stm
@@ -13,7 +12,7 @@ sig
 
        and exp = BINOP of binop * exp * exp
                | MEM of exp
-               | TEMP of temp
+               | TEMP of Temp.temp
                | ESEQ of stm * exp
                | NAME of label
                | CONST of int
@@ -37,7 +36,6 @@ struct
   structure M = Temp
 
   type label = M.label
-  type temp  = M.temp
   type size = int
 
   datatype stm = SEQ of stm * stm
@@ -49,7 +47,7 @@ struct
 			
        and exp = BINOP of binop * exp * exp
                | MEM of exp
-               | TEMP of temp
+               | TEMP of Temp.temp
                | ESEQ of stm * exp
                | NAME of label
                | CONST of int
@@ -64,7 +62,25 @@ struct
                  | LT | GT | LE | GE 
 	              | ULT | ULE | UGT | UGE
                                 
-  fun notRel _ = NE             (* fill this in *)
-                   
-  fun commute _ = ULE           (* fill this in *)
+  fun notRel EQ = NE
+    | notRel NE = EQ
+    | notRel LT = GE
+    | notRel GT = LE
+    | notRel LE = GT
+    | notRel GE = LT
+    | notRel ULT = UGE
+    | notRel ULE = UGT
+    | notRel UGT = ULE
+    | notRel UGE = ULT
+
+  fun commute EQ = EQ
+    | commute NE = NE
+    | commute LT = GT
+    | commute GT = LT
+    | commute LE = GE
+    | commute GE = LE
+    | commute ULT = UGT
+    | commute ULE = UGE
+    | commute UGT = ULT
+    | commute UGE = ULE
 end

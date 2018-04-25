@@ -152,15 +152,7 @@ Read chapters
    10 (Liveness Analysis),
    11 (Register Allocation)
    12 (Putting it All Together)
-Complete program sections from chapter 9, 10, 11, 12.  For register allocation, a simple allocator for up to 27 live temporaries is sufficient for good--excellent marks. Exceptional compilers will spill.
-
-The main.sml structure accepts additional arguments:
-
-             -a generate and print assembly
-                  temporaries will be printed as T###
-             -r allocate registers
-                  all temporaries should become registers
-                  but if not, then they will still be T###
+Complete program sections from chapter 9, 10, 11, 12. For register allocation, I didn't implement spill.
 
 I provided a syslib.s file which contains an RiscV32 system library compatible
 with the Gem5 simulator (https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/se0TVeaA_JI)
@@ -170,4 +162,103 @@ Start with a register allocator that works if the function fits in caller-save r
 where you save all of them; then extend to save only overwritten callee-save registers; then finally
 spill registers for functiosn that don't fit at all.
 
+**The main.sml structure accepts additional arguments:**
+
+             -a generate and print assembly
+                  temporaries will be printed as T###
+             -r allocate registers
+                  all temporaries should become registers
+                  but if not, then they will still be T###
+                  
+**The canon.sml do cononicalization:**
+
+				Canon.commute :: TREE.stm * TREE.exp -> bool
+            // as explained on p.175, the existing implementation works; 
+            // but fails to allow most optimizations
+
+**For riscvframe.sml:**
+
+These functions will use a number of other values in RiscVFrame, things like RiscVFrame.calldefs, RiscVFrame.wordSize, RiscVFrame.externalCall, ...
+
+1. PEE1: 
+           
+           RiscVFrame.procEntryExit1 :: FRAME.frame * TREE.stm -> TREE.stm
+           
+	As explained on p.261, it needs to pick up whatever information your register allocator figures out for the frame, and uses it to: 
+     
+     * move the arguments into the temporaries where the function body expects them to be.
+     * move the result of a tiger function from the temporary result to the return value temporary.
+2. PEE2:       
+
+ 			   RiscVFrame.procEntryExit2 :: FRAME.frame * [ Assem.instr ] -> [ Assem.instr ]
+
+  As explained on pp. 208--208, it needs to set up the liveness properties of values needed at the end of a tiger function:
+  
+   * things like the old FP, SP, and the needed RA
+3. PEE3: 
+
+            FRAME.frame * [ Assem.instr ] -> { prolog :: string
+                                             , body :: [ Assem.instr ]
+                                             , epilog :: string }
+As described on p. 209, this emits the dummy strings identifying the start and end of the assembly-language instructions for a given tiger function ... as described on p. 261, this needs to compute assembly-language instructions that perform the view shift at the start and end of the assembly-language for a tiger function (this is the subject of most of chapter 6, specifically pp. 124--136.)
+
+**For makegraph:** 
+
+Makegraph module is empty because I implement that flow-graph constructor function inside the RegAlloc structure -- after all, it's only ever called from there.
+    
+            MakeGraph.instrs2graph :: [ Assem.instr ] -> (Flow.flowgraph, [ Graph.Node ])
+            // documented on p. 224
+            MakeGraph.show :: Stream * Flow.flowgraph -> unit
+            // This is a utility function
+
+ **For Color module and RegAlloc module:**
+ 
+ They are described on pp. 253--254 of the textbook. I use the Liveness implementation to see how to build programs from equational work-flow algorithms. Register allocation is just those same algorithms, done using different equations explained on pp. 242--250.
+
+
+## Simulator and helper files
+
+In the /TIGER folder, I've placed a number of files.  Most notably,
+
+  * assemble 
+    - a shell script that takes a single *.s file and 
+    - assembles it with the system library into a RISCV32 executable
+    - using the gnu toolchain in /opt/riscv32
+
+ * run
+   - a shell script that takes a RISCV32 executable and runs it
+   - using the riscv32-qemu simulator from /opt/riscv32
+
+and the support files it relies on:
+
+  * main.c -- a simple RISCV32 entry point for LINUX
+
+  * syslib.s -- the complete TIGER syslib for RISCV32 LINUX
+  	  - only three routines interact with the OS:
+		 - print(string),
+		 - getchar():string,
+		 - exit(int)
+	    - the other routines are entirely self-contained
+
+An example TIGER program, and the three stages:
+   
+   * ret2.tig -- a TIGER program
+   * ret2.s   -- the compiled version of the TIGER program
+   * ret2     -- the assembled version of the TIGER program
+
+   
+For example, my TIGER implementation compiled `ret2.tig` into `ret2.s`.  Then "compile `ret2.s`" built `ret2'`, which "run `ret2`" executes correctly.  In order for this to work, some conventions need to be followed:
+	
+* TIGER must emit the code for the main expression as the `tigermain`'	procedure
+* my compiler emits calls to external functions (system library and other support routines) as calls to a label with the function name prefixed by "_"; this means my `env.sml'` contains the usual names; I've supplied that file.
+* the system library must interoperate with the TIGER compiler; I've supplied my `syslib.s'`
+		
+My system library has been tested, you can see most of the test suite in `testSyslib.c` which might also help you to understand RISCV32.  
+
+If you tried
+             
+    /opt/riscv32/bin/riscv32-unknown-elf-gcc -S main.c
+    /opt/riscv32/bin/riscv32-unknown-elf-gcc -S testSyslib.c
+
+then you'd get a `main.s`, and `testSyslib.s` which contain the RISCV32 assembly code for the C code.
 

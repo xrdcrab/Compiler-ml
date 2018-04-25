@@ -164,7 +164,29 @@ struct
 
   fun saveReg (register, access) = R.MOVE((exp access (R.TEMP FP)), R.TEMP(register))
 
-  fun procEntryExit1 ({name, formals, sp}, stm) = stm
+  fun procEntryExit1 ({name, formals, sp}, stm) = let
+    val saved = [RA] @ calleeRegs
+    val temps = map (fn temp => Temp.newtemp ()) saved
+    val RS = seq (ListPair.mapEq move (temps, saved))
+    val RR = seq (ListPair.mapEq move (saved, temps))
+    val stm' = seq [RS, stm, RR]
+
+    fun moveargs (arg, access) =
+      let
+        val access' = exp access
+      in
+        Tree.MOVE (access' (Tree.TEMP FP), Tree.TEMP arg)
+      end
+    
+    val funFormals = formals frame
+    val viewShift = seq (ListPair.map moveargs (argregs, funFormals))
+    
+  in
+    (*(case funFormals of
+      [] => stm'
+      | _  => Tree.SEQ (viewShift, stm'))*)
+    stm
+  end
                                     
   fun procEntryExit2 (frame, body) = body
                                       @ 
